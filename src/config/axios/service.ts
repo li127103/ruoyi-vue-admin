@@ -1,7 +1,11 @@
 import {config} from "@/config/axios/config"
-import axios, {AxiosInstance, InternalAxiosRequestConfig} from "axios"
+import axios, {AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig} from "axios"
 import qs from 'qs'
-import {getAccessToken, getTenantId, getVisitTenantId} from "@/utils/auth";
+import {getAccessToken, getRefreshToken, getTenantId, getVisitTenantId} from "@/utils/auth";
+import {ApiEncrypt} from "@/utils/encrypt";
+import errorCode from './errorCode'
+import {useI18n} from "vue-i18n";
+import {ElMessageBox} from "element-plus";
 
 const tenantEnable = import.meta.env.VITE_APP_TENANT_ENABLE
 const {result_code, base_url, request_timeout} = config
@@ -77,13 +81,99 @@ service.interceptors.request.use(
             try {
                 //加密请求数据
                 if (config.data) {
-                    config.data =
+                    config.data =  ApiEncrypt.encryptRequest(config.data)
+                    // 设置加密标识头
+                    config.headers[ApiEncrypt.getEncryptHeader()] = 'true'
                 }
             }catch (error) {
+                console.error('请求数据加密失败:', error)
+                throw error
+            }
+        }
+        return config
+    },
+    (error: AxiosError)=> {
+        // Do something with request error
+        console.log(error) // for debug
+        return Promise.reject(error)
+    }
+)
 
+// response 拦截器
+service.interceptors.response.use(
+    async (response: AxiosResponse) =>{
+        let {data} = response
+        const config = response.config
+        if (!data){
+            // 返回“[HTTP]请求没有返回值”;
+            throw new Error()
+        }
+        // 检查是否需要解密响应数据
+        const encryptHeader = ApiEncrypt.getEncryptHeader()
+        const  isEncryptResponse =
+            response.headers[encryptHeader] === 'true' ||
+            response.headers[encryptHeader.toLowerCase()] === 'true'
+        if (isEncryptResponse && typeof  data ==='string'){
+            try {
+                // 解密响应数据
+                data = ApiEncrypt.decryptResponse(data)
+            } catch (error) {
+                console.error('响应数据解密失败:', error)
+                throw new Error('响应数据解密失败: ' + (error as Error).message)
             }
         }
 
+        const {t} = useI18n()
+        // 未设置状态码则默认成功状态
+        // 二进制数据则直接返回，例如说 Excel 导出
+        if (
+            response.request.responseType === 'blob' ||
+            response.request.responseType === 'arraybuffer'
+        ){
+            // 注意：如果导出的响应为 json，说明可能失败了，不直接返回进行下载
+            if (response.data.type !== 'application/json') {
+                return response.data
+            }
+            data = await new Response(response.data).json()
+        }
 
-    }
+        const  code = data.code || result_code
+        // 获取错误信息
+        const msg = data.msg || errorCode[code] ||errorCode['default']
+        if (ignoreMsgs.indexOf(msg) !== -1){
+            // 如果是忽略的错误码，直接返回 msg 异常
+            return Promise.reject(msg)
+        }else if (code == 401){
+            // 如果未认证，并且未进行刷新令牌，说明可能是访问令牌过期了
+            if (!isRefreshToken){
+                isRefreshToken = true
+                // 1. 如果获取不到刷新令牌，则只能执行登出操作
+                if (!getRefreshToken()) {
+                    return
+                }
+            }
+        }
+}
 )
+
+
+const  handleAuthorized = () => {
+    const {t} = useI18n()
+    if (!isRelogin.show){
+        // 如果已经到登录页面则不进行弹窗提示
+        if (window.location.href.includes('login')) {
+            return
+        }
+        isRelogin.show = true
+        ElMessageBox.confirm(t('sys.api.timeoutMessage'), t('common.confirmTitle'), {
+            showCancelButton: false,
+            closeOnClickModal: false,
+            showClose: false,
+            closeOnPressEscape: false,
+            confirmButtonText: t('login.relogin'),
+            type:'warning'
+        }).then(()=>{
+            
+        })
+    }
+}

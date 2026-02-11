@@ -6,6 +6,7 @@ import qs from 'qs'
 import {defineAsyncComponent} from "vue";
 
 
+// @ts-ignore
 const modules = import.meta.glob('../views/**/*.{vue,tsx}')
 
 
@@ -130,12 +131,125 @@ export  const  generateRoute = (routes: AppCustomRouteRecordRaw[]) :AppRouteReco
             //目录
             if (route.children?.length) {
                 data.component = Layout
-                data.redirect =
+                data.redirect = getRedirect(route.path, route.children)
+                //外部链接
+            }else if(isUrl(route.path)) {
+                data = {
+                    path :'/external-link',
+                    component:Layout,
+                    meta :{
+                        name : route.name,
+                    },
+                    children: [data]
+                } as AppRouteRecordRaw
+                //菜单
+            }else  {
+                // 对后端传component组件路径和不传做兼容（如果后端传component组件路径，那么path可以随便写，如果不传，component组件路径会根path保持一致）
+                const index = route?.component
+                ? modulesRoutesKeys.findIndex((ev) => ev.includes(route.component))
+                 : modulesRoutesKeys.findIndex((ev)=> ev.includes(route.path))
+                data.component =  modules[modulesRoutesKeys[index]]
             }
+            if (route.children) {
+                data.children = generateRoute(route.children)
+            }
+        }
+        res.push( data  as AppRouteRecordRaw )
+    }
+    return res
+}
+export  const getRedirect = (parentPath: string,children: AppCustomRouteRecordRaw[]) => {
+    if (!children || children.length == 0){
+        return parentPath
+    }
+    const path =  generateRoutePath(parentPath, children[0].path)
+    //递归字节点
+    if (children[0].children ) return  getRedirect(path, children[0].children)
+}
+
+const  generateRoutePath = (parentPath: string, path: string) =>{
+    if (parentPath.endsWith('/')){
+        parentPath =  parentPath.slice(0, -1) // 移除默认的 /
+    }
+    if (!path.startsWith('/')){
+        path = '/' + path
+    }
+    return parentPath + path
+}
+
+export  const  pathResolve = (parentPath: string, path: string) => {
+       if (isUrl(path)) return path
+       if (!path) return parentPath // 修复 path 为空时返回 parentPath，避免拼接出错 https://t.zsxq.com/QVr6b
+       const childPath =  path.startsWith('/') ? path : `/${path}`
+    return `${parentPath}${childPath}`.replace(/\/+/g, '/')
+}
+
+//路由降级
+export  const  flatMultiLevelRoutes  = (routes: AppRouteRecordRaw[]) => {
+    const modules:AppRouteRecordRaw[] = cloneDeep(routes)
+    for (let  index = 0; index<modules.length; index++) {
+        const  route =  modules[index]
+        if (!isMultipleRoute(route)){
+            continue
+        }
+       promoteRouteLevel(route)
+    }
+    return modules
+}
+
+//层级是否大于2
+const isMultipleRoute  = (route: AppRouteRecordRaw) => {
+    if (!route || !Reflect.has(route, 'children') || !route?.children?.length) {
+         return false
+    }
+
+    const children = route.children
+    let flag = false
+    for(let index = 0 ; index < children.length; index++) {
+        const child = children[index]
+        if (child.children?.length){
+            flag = true
+            break
+        }
+    }
+    return flag
+}
+// 生成二级路由
+const promoteRouteLevel =   (route: AppRouteRecordRaw) =>{
+    let router: Router | null  = createRouter({
+        routes: [route as RouteRecordRaw],
+        history:createWebHashHistory()
+    })
+
+    const routes = router.getRoutes()
+    addToChildren(routes, route.children || [] , route)
+    router = null
+    route.children =  route.children?.map((item) => omit(item,'children'))
+
+}
+
+
+// 添加所有子菜单
+const addToChildren =  (
+    routes: RouteRecordNormalized[],
+    children: AppRouteRecordRaw[],
+    routeModule: AppRouteRecordRaw
+) => {
+    for (let index = 0; index < children.length; index++) {
+        const child = children[index]
+        const route =  routes.find((item) => item.name === child.name)
+        if (!route){
+            continue
+        }
+        routeModule.children =  routeModule.children || []
+        if (!routeModule.children.find((item) => item.name === route.name)) {
+            routeModule.children?.push(route as unknown as AppRouteRecordRaw)
+        }
+        if (child.children?.length){
+            addToChildren(routes, child.children, routeModule)
         }
     }
 }
-
 const  toCamelCase = (str: string, upperCaseFirst: boolean) => {
     str = (str || '')
         .replace(/-(.)/g, function (group1: string) {

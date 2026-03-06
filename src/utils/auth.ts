@@ -1,9 +1,9 @@
-import {CACHE_KEY, userCache} from "@/hooks/web/userCache";
+import {CACHE_KEY, useCache} from "@/hooks/web/useCache";
 import {TokenType} from "@/api/login/types";
 import {encrypt} from "@/utils/jsencrypt";
 
 
-const {wsCache} = userCache()
+const {wsCache} = useCache()
 
 const AccessTokenKey = 'ACCESS_TOKEN'
 const RefreshTokenKey = 'REFRESH_TOKEN'

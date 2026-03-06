@@ -21,7 +21,7 @@ export const CACHE_KEY = {
 }
 
 
-export const userCache = (type: CacheType = 'localStorage') => {
+export const useCache = (type: CacheType = 'localStorage') => {
     const wsCache: WebStorageCache = new WebStorageCache({
         storage: type
     })
@@ -31,7 +31,7 @@ export const userCache = (type: CacheType = 'localStorage') => {
 }
 
 export const deleteUserCache = () => {
-    const {wsCache} = userCache()
+    const {wsCache} = useCache()
     wsCache.delete(CACHE_KEY.USER)
     wsCache.delete(CACHE_KEY.ROLE_ROUTERS)
     wsCache.delete(CACHE_KEY.VisitTenantId)

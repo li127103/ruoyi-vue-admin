@@ -29,16 +29,18 @@ export  type  FormSchema = {
     label?: string
     // 提示
     labelMessage?: string
-
-    // col 组件属性
-    colProps? : ColProps
-
+    // col组件属性
+    colProps?: ColProps
     // 表单组件属性，slots对应的是表单组件的插槽，规则：${field}-xxx，具体可以查看element-plus文档
-    componentProps?: { slots?:Recordable} & ComponentProps
-
+    componentProps?: { slots?: Recordable } & ComponentProps
+    // formItem组件属性
+    formItemProps?: FormItemProps
+    // 渲染的组件
+    component?: ComponentName
     // 初始值
     value?: FormValueType
-
-    //远程加载下拉项
+    // 是否隐藏
+    hidden?: boolean
+    // 远程加载下拉项
     api?: <T = any>() => AxiosPromise<T>
 }

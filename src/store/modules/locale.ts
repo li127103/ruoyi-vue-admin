@@ -18,7 +18,7 @@ interface LocaleState {
     localeMap: LocaleDropdownType[]
 }
 
-export const useLocalStore = defineStore('locales', {
+export const useLocaleStore = defineStore('locales', {
     state: (): LocaleState => {
         return {
             currentLocale: {
@@ -59,5 +59,5 @@ export const useLocalStore = defineStore('locales', {
 })
 
 export const useLocaleStoreWithOut = () => {
-    return useLocalStore(store)
+    return useLocaleStore(store)
 }

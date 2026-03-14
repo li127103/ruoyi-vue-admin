@@ -47,7 +47,7 @@
     "driver.js": "^1.4.0",
     "echarts": "^6.0.0",
     "echarts-wordcloud": "^2.1.0",
-    "element-plus": "^2.13.1",
+    "element-plus": "2.11.1",
     "fast-xml-parser": "^5.3.3",
     "highlight.js": "^11.11.1",
     "jsencrypt": "^3.5.4",

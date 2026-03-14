@@ -1,6 +1,7 @@
 import {FormSchema} from "@/types/form";
 import {PlaceholderModel} from "@/components/Form/src/types";
 import {ColProps} from '@/types/components'
+import {getSlot} from "@/utils/tsxHelper";
 
 /**
  *
@@ -79,3 +80,70 @@ export const setComponentProps = (item: FormSchema): Recordable => {
     delete componentProps?.slots
     return componentProps
 }
+
+/**
+ *
+ * @param slots 插槽
+ * @param slotsProps 插槽属性
+ * @param field 字段名
+ */
+export const setItemComponentSlots = (
+    slots: Slots,
+    slotsProps: Recordable = {},
+    field: string
+): Recordable => {
+    const slotObj: Recordable = {}
+    for (const key in slotsProps) {
+        if (slotsProps[key]) {
+            // 由于组件有可能重复，需要有一个唯一的前缀
+            slotObj[key] = (data: Recordable) => {
+                return getSlot(slots, `${field}-${key}`, data)
+            }
+        }
+    }
+    return slotObj
+}
+
+/**
+ *
+ * @param schema Form表单结构化数组
+ * @param formModel FormModel
+ * @returns FormModel
+ * @description 生成对应的formModel
+ */
+export const initModel = (schema: FormSchema[], formModel: Recordable) => {
+    const model: Recordable = {...formModel}
+
+    schema.map((v) => {
+        // 如果是hidden，就删除对应的值
+        if (v.hidden) {
+            delete model[v.field]
+        } else if (v.component && v.component !== 'Divider') {
+            const hasField = Reflect.has(model, v.field)
+            // 如果先前已经有值存在，则不进行重新赋值，而是采用现有的值
+            model[v.field] = hasField ? model[v.field] : v.value !== 0 ? v.value : ''
+        }
+    })
+    return model
+}
+
+/**
+ * @param slots 插槽
+ * @param field 字段名
+ * @returns 返回FormIiem插槽
+ */
+export const setFormItemSlots = (slots: Slots, field: string): Recordable => {
+    const slotObj: Recordable = {}
+    if (slots[`${field}-error`]) {
+        slotObj['error'] = (data: Recordable) => {
+            return getSlot(slots, `${field}-error`, data)
+        }
+    }
+    if (slots[`${field}-label`]) {
+        slotObj['label'] = (data: Recordable) => {
+            return getSlot(slots, `${field}-label`, data)
+        }
+    }
+    return slotObj
+}
+

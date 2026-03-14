@@ -3,7 +3,7 @@ import {ElCheckbox, ElCheckboxButton} from 'element-plus'
 import {defineComponent} from 'vue'
 
 export const useRenderCheckbox = () => {
-    const renderCheckBoxOptions = (item: FormSchema) => {
+    const renderCheckboxOptions = (item: FormSchema) => {
         // 如果有别名，就取别名
         const labelAlias = item?.componentProps?.optionsAlias?.labelField
         const valueAlias = item?.componentProps?.optionsAlias?.valueField
@@ -19,5 +19,5 @@ export const useRenderCheckbox = () => {
             )
         })
     }
-    return {renderCheckBoxOptions}
+    return {renderCheckboxOptions}
 }

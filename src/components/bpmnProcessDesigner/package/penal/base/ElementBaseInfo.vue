@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 
+import {onBeforeUnmount, reactive, ref, toRaw, watch} from "vue";
+
 defineOptions({name: 'ElementBaseInfo'})
 
 const props = defineProps({

@@ -1,6 +1,6 @@
 <template>
   <div class="process-viewer">
-    <div style="height: 100%" ref="processCanvas" v-show="!isLoading"></div>
+    <div style="height: 100%" ref="processCanvas" v-show="!isLoading"> </div>
     <!-- 自定义箭头样式，用于已完成状态下流程连线箭头 -->
     <defs ref="customDefs">
       <marker
@@ -89,7 +89,7 @@
           />
           <el-table-column align="center" label="审批状态" prop="status" min-width="90">
             <template #default="scope">
-              <dict-tag :type="DICT_TYPE.BPM_TASK_STATUS" :value="scope.row.status"/>
+              <dict-tag :type="DICT_TYPE.BPM_TASK_STATUS" :value="scope.row.status" />
             </template>
           </el-table-column>
           <el-table-column
@@ -129,7 +129,7 @@
               :icon="ZoomIn"
               @click="processZoomIn()"
           />
-          <el-button size="default" :icon="ScaleToOriginal" @click="processReZoom()"/>
+          <el-button size="default" :icon="ScaleToOriginal" @click="processReZoom()" />
         </el-button-group>
       </el-row>
     </div>
@@ -140,10 +140,11 @@
 import '../theme/index.scss'
 import BpmnViewer from 'bpmn-js/lib/Viewer'
 import MoveCanvasModule from 'diagram-js/lib/navigation/movecanvas'
-import {ZoomOut, ZoomIn, ScaleToOriginal} from '@element-plus/icons-vue'
-import {DICT_TYPE} from '@/utils/dict'
-import {dateFormatter, formatPast2} from '@/utils/formatTime'
-import {BpmProcessInstanceStatus} from '@/utils/constants'
+import { ZoomOut, ZoomIn, ScaleToOriginal } from '@element-plus/icons-vue'
+import { DICT_TYPE } from '@/utils/dict'
+import { dateFormatter, formatPast2 } from '@/utils/formatTime'
+import { BpmProcessInstanceStatus } from '@/utils/constants'
+import {onBeforeUnmount, onMounted, ref, watch} from "vue";
 
 const props = defineProps({
   xml: {
@@ -262,7 +263,7 @@ const importXML = async (xml: string) => {
         container: processCanvas.value
       })
       // 增加点击事件
-      bpmnViewer.value.on('element.click', ({element}) => {
+      bpmnViewer.value.on('element.click', ({ element }) => {
         onSelectElement(element)
       })
 
@@ -355,7 +356,7 @@ watch(
     (newXml) => {
       importXML(newXml)
     },
-    {immediate: true}
+    { immediate: true }
 )
 
 watch(
@@ -363,7 +364,7 @@ watch(
     (newView) => {
       setProcessStatus(newView)
     },
-    {immediate: true}
+    { immediate: true }
 )
 
 /** mounted：初始化 */
